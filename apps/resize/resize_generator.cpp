@@ -145,95 +145,95 @@ public:
         } else {
             output(x, y, c) = saturating_cast(input.type(), resized(x, y, c));
         }
+    }
 
-		if (!using_autoscheduler()) {
-			const int vec = natural_vector_size<float>();
+    void schedule() {
+        const int vec = natural_vector_size<float>();
 
-			Var xi("xi"), yi("yi");
-			unnormalized_kernel_x
-				.compute_at(kernel_x, x)
-				.store_in(MemoryType::Stack)
-				.vectorize(x);
-			kernel_sum_x
-				.compute_at(kernel_x, x)
-				.vectorize(x);
-			kernel_x
-				.compute_root()
-				.reorder(k, x)
-				.vectorize(x, vec);
+        Var xi("xi"), yi("yi");
+        unnormalized_kernel_x
+            .compute_at(kernel_x, x)
+            .store_in(MemoryType::Stack)
+            .vectorize(x);
+        kernel_sum_x
+            .compute_at(kernel_x, x)
+            .vectorize(x);
+        kernel_x
+            .compute_root()
+            .reorder(k, x)
+            .vectorize(x, vec);
 
-			unnormalized_kernel_y
-				.compute_at(kernel_y, y)
-				.vectorize(y, vec);
-			kernel_sum_y
-				.compute_at(kernel_y, y)
-				.vectorize(y);
-			kernel_y
-				.compute_at(output, y)
-				.reorder(k, y)
-				.vectorize(y, vec);
+        unnormalized_kernel_y
+            .compute_at(kernel_y, y)
+            .vectorize(y, vec);
+        kernel_sum_y
+            .compute_at(kernel_y, y)
+            .vectorize(y);
+        kernel_y
+            .compute_at(output, y)
+            .reorder(k, y)
+            .vectorize(y, vec);
 
-			if (upsample) {
-				output
-					.tile(x, y, xi, yi, 16, 64)
-					.parallel(y)
-					.vectorize(xi);
-				resized_x
-					.compute_at(output, x)
-					// .hoist_storage(output, y)
-					.vectorize(x);
-				resized_y
-					.compute_at(output, xi)
-					.unroll(c);
-			} else {
-				output
-					.tile(x, y, xi, yi, 32, 8)
-					.parallel(y)
-					.vectorize(xi);
-				resized_y
-					.compute_at(output, y)
-					.vectorize(x, vec);
-				resized_x
-					.compute_at(output, xi)
-					.unroll(c);
-			}
+        if (upsample) {
+            output
+                .tile(x, y, xi, yi, 16, 64)
+                .parallel(y)
+                .vectorize(xi);
+            resized_x
+                .compute_at(output, x)
+                // .hoist_storage(output, y)
+                .vectorize(x);
+            resized_y
+                .compute_at(output, xi)
+                .unroll(c);
+        } else {
+            output
+                .tile(x, y, xi, yi, 32, 8)
+                .parallel(y)
+                .vectorize(xi);
+            resized_y
+                .compute_at(output, y)
+                .vectorize(x, vec);
+            resized_x
+                .compute_at(output, xi)
+                .unroll(c);
+        }
 
-			// Allow the input and output to have arbitrary memory layout,
-			// and add some specializations for a few common cases. If
-			// your case is not covered (e.g. planar input, packed rgb
-			// output), you could add a new specialization here.
-			output.dim(0).set_stride(Expr());
-			input.dim(0).set_stride(Expr());
+        // Allow the input and output to have arbitrary memory layout,
+        // and add some specializations for a few common cases. If
+        // your case is not covered (e.g. planar input, packed rgb
+        // output), you could add a new specialization here.
+        output.dim(0).set_stride(Expr());
+        input.dim(0).set_stride(Expr());
 
-			Expr planar = (output.dim(0).stride() == 1 &&
-						   input.dim(0).stride() == 1);
-			Expr packed_rgb = (output.dim(0).stride() == 3 &&
-							   output.dim(2).stride() == 1 &&
-							   output.dim(2).min() == 0 &&
-							   output.dim(2).extent() == 3 &&
-							   input.dim(0).stride() == 3 &&
-							   input.dim(2).stride() == 1 &&
-							   input.dim(2).min() == 0 &&
-							   input.dim(2).extent() == 3);
-			Expr packed_rgba = (output.dim(0).stride() == 4 &&
-								output.dim(2).stride() == 1 &&
-								output.dim(2).min() == 0 &&
-								output.dim(2).extent() == 4 &&
-								input.dim(0).stride() == 4 &&
-								input.dim(2).stride() == 1 &&
-								input.dim(2).min() == 0 &&
-								input.dim(2).extent() == 4);
+        Expr planar = (output.dim(0).stride() == 1 &&
+                       input.dim(0).stride() == 1);
+        Expr packed_rgb = (output.dim(0).stride() == 3 &&
+                           output.dim(2).stride() == 1 &&
+                           output.dim(2).min() == 0 &&
+                           output.dim(2).extent() == 3 &&
+                           input.dim(0).stride() == 3 &&
+                           input.dim(2).stride() == 1 &&
+                           input.dim(2).min() == 0 &&
+                           input.dim(2).extent() == 3);
+        Expr packed_rgba = (output.dim(0).stride() == 4 &&
+                            output.dim(2).stride() == 1 &&
+                            output.dim(2).min() == 0 &&
+                            output.dim(2).extent() == 4 &&
+                            input.dim(0).stride() == 4 &&
+                            input.dim(2).stride() == 1 &&
+                            input.dim(2).min() == 0 &&
+                            input.dim(2).extent() == 4);
 
-			output.specialize(planar);
+        output.specialize(planar);
 
-			output.specialize(packed_rgb)
-				.reorder(c, xi, yi, x, y)
-				.unroll(c);
+        output.specialize(packed_rgb)
+            .reorder(c, xi, yi, x, y)
+            .unroll(c);
 
-			output.specialize(packed_rgba)
-				.reorder(c, xi, yi, x, y)
-				.unroll(c);
-		}
+        output.specialize(packed_rgba)
+            .reorder(c, xi, yi, x, y)
+            .unroll(c);
     }
 };
 
