@@ -209,6 +209,11 @@ public:
             sample_locations.compute_at(output, x);
         } else {
             // Manual CPU schedule
+			printf("Before scheduling\n");
+			cost_confidence.print_loop_nest();
+			cost.print_loop_nest();
+			cost_pyramid_push[0].print_loop_nest();
+			printf("After scheduling\n");
             cost_pyramid_push[0]
                 .compute_root()
                 .reorder(c, z, x, y)
@@ -217,10 +222,13 @@ public:
                 .vectorize(x, 16)
                 .parallel(y, 4);
             cost.compute_at(cost_pyramid_push[0], x)
-                .hoist_storage(cost_pyramid_push[0], y)
+                // .store_at(cost_pyramid_push[0], y)
                 .vectorize(x);
             cost_confidence.compute_at(cost_pyramid_push[0], x)
                 .vectorize(x);
+			cost_confidence.print_loop_nest();
+			cost.print_loop_nest();
+			cost_pyramid_push[0].print_loop_nest();
 
             Var xi, yi, t;
             for (int i = 1; i < 8; i++) {

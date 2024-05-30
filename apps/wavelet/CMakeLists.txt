@@ -37,10 +37,10 @@ target_link_libraries(wavelet
                       inverse_haar_x)
 
 # Test that the app actually works!
-set(IMAGE ${CMAKE_CURRENT_LIST_DIR}/../images/gray.png)
+set(IMAGE ${CMAKE_CURRENT_LIST_DIR}/../images/matrix_7000.mat)
 if (EXISTS ${IMAGE})
-    configure_file(${IMAGE} gray.png COPYONLY)
-    add_test(NAME wavelet COMMAND wavelet gray.png .)
+    configure_file(${IMAGE} matrix_7000.mat COPYONLY)
+    add_test(NAME wavelet COMMAND wavelet matrix_7000.mat .)
     set_tests_properties(wavelet PROPERTIES
                          LABELS wavelet
                          PASS_REGULAR_EXPRESSION "Success!"

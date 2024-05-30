@@ -17,14 +17,17 @@ public:
         /* THE ALGORITHM */
 
         Var x("x"), y("y"), c("c"), n("n");
+        Var x_conv("x_conv"), y_conv("y_conv"), c_conv("c_conv"), n_conv("n_conv");
+        Var x_conv_2("x_conv_2"), y_conv_2("y_conv_2"), c_conv_2("c_conv_2"), n_conv_2("n_conv_2");
+        Var x_relu("x_relu"), y_relu("y_relu"), c_relu("c_relu"), n_relu("n_relu");
 
         Func conv("conv");
         RDom r(0, CI, 0, 3, 0, 3);
 
-        conv(c, x, y, n) = bias(c);
-        conv(c, x, y, n) += filter(c, r.y, r.z, r.x) * input(r.x, x + r.y, y + r.z, n);
+        conv(c_conv, x_conv, y_conv, n_conv) = bias(c_conv);
+        conv(c_conv, x_conv, y_conv, n_conv) += filter(c_conv, r.y, r.z, r.x) * input(r.x, x_conv + r.y, y_conv + r.z, n_conv);
 
-        relu(c, x, y, n) = max(0, conv(c, x, y, n));
+        relu(c_relu, x_relu, y_relu, n_relu) = max(0, conv(c_relu, x_relu, y_relu, n_relu));
 
         /* THE SCHEDULE */
 
@@ -83,14 +86,14 @@ public:
             Var ni, no, xi, xo, yi, yo, ci, co, t;
             RVar rxo, rxi, rxii;
             relu.compute_root()
-                .split(x, xo, xi, 5)
-                .split(y, yo, yi, 5)
-                .split(c, co, ci, 32)
-                .reorder(xi, yi, ci, xo, yo, co, n)
+                .split(x_relu, xo, xi, 5)
+                .split(y_relu, yo, yi, 5)
+                .split(c_relu, co, ci, 32)
+                .reorder(xi, yi, ci, xo, yo, co, n_relu)
                 .gpu_lanes(ci)
                 .unroll(xi)
                 .unroll(yi)
-                .fuse(co, n, t)
+                .fuse(co, n_relu, t)
                 .gpu_blocks(xo, yo, t);
 
             conv.compute_at(relu, xo)
@@ -168,27 +171,33 @@ public:
                 tile_h = 4;
             }
 
+			input.in().print_loop_nest();
+			filter.in().print_loop_nest();
+			conv.print_loop_nest();
+			relu.print_loop_nest();
+			printf("Afterwards\n");
+
             Var co, ci, xo, xi, yo, yi, t;
-            relu.split(c, co, ci, vec * tile_w)
-                .split(x, xo, xi, tile_h)
-                .reorder(ci, xi, xo, y, n, co)
+            relu.split(c_relu, co, ci, vec * tile_w)
+                .split(x_relu, xo, xi, tile_h)
+                .reorder(ci, xi, xo, y_relu, n_relu, co)
                 .vectorize(ci, vec)
                 .unroll(ci)
                 .unroll(xi)
-                .parallel(y)
-                .parallel(n)
+                .parallel(y_relu)
+                .parallel(n_relu)
                 .parallel(co);
             conv.compute_at(relu, xo)
-                .vectorize(c, vec)
-                .unroll(c)
-                .unroll(x)
-                .unroll(y)
+                .vectorize(c_conv, vec)
+                .unroll(c_conv)
+                .unroll(x_conv)
+                .unroll(y_conv)
                 .update()
-                .reorder(c, x, y, r.x, r.y, r.z, n)
-                .vectorize(c, vec)
-                .unroll(c)
-                .unroll(x)
-                .unroll(y)
+                .reorder(c_conv, x_conv, y_conv, r.x, r.y, r.z, n_conv)
+                .vectorize(c_conv, vec)
+                .unroll(c_conv)
+                .unroll(x_conv)
+                .unroll(y_conv)
                 .unroll(r.x, 2);
             filter.in()
                 .compute_at(conv, r.x)
@@ -196,8 +205,13 @@ public:
                 .unroll(_0)
                 .unroll(_3);
             input.in()
-                .compute_at(conv, x)
+                .compute_at(conv, x_conv)
                 .unroll(_0);
+
+			input.in().print_loop_nest();
+			filter.in().print_loop_nest();
+			conv.print_loop_nest();
+			relu.print_loop_nest();
         }
     }
 };

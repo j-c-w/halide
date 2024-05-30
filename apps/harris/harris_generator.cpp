@@ -108,6 +108,12 @@ public:
             } else {
                 // 0.92ms on an Intel i9-9960X using 16 threads
                 const int vec = natural_vector_size<float>();
+				output.print_loop_nest();
+				gray.print_loop_nest();
+				Ix.print_loop_nest();
+				Iy.print_loop_nest();
+				printf("Afterwards: \n");
+
                 output.split(y, y, yi, 32)
                     .parallel(y)
                     .vectorize(x, vec);
@@ -121,6 +127,11 @@ public:
                     .compute_at(output, yi)
                     .vectorize(x, vec);
                 Ix.compute_with(Iy, x);
+
+				output.print_loop_nest();
+				gray.print_loop_nest();
+				Ix.print_loop_nest();
+				Iy.print_loop_nest();
             }
         }
     }

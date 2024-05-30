@@ -29,10 +29,10 @@ target_link_libraries(nl_means_process
                       nl_means_auto_schedule)
 
 # Test that the app actually works!
-set(IMAGE ${CMAKE_CURRENT_LIST_DIR}/../images/rgb.png)
+set(IMAGE ${CMAKE_CURRENT_LIST_DIR}/../images/gray_small.pgm)
 if (EXISTS ${IMAGE})
-    configure_file(${IMAGE} rgb.png COPYONLY)
-    add_test(NAME nl_means_process COMMAND nl_means_process rgb.png 7 7 0.12 10 out.png)
+    configure_file(${IMAGE} rgb.pgm COPYONLY)
+    add_test(NAME nl_means_process COMMAND nl_means_process rgb.pgm 7 7 0.12 10 out.pgm)
     set_tests_properties(nl_means_process PROPERTIES
                          LABELS nl_means
                          PASS_REGULAR_EXPRESSION "Success!"

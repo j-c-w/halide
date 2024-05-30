@@ -6,7 +6,7 @@
 using namespace Halide;
 using namespace Halide::BoundaryConditions;
 
-Var x, y, c;
+Var x("x"), y("y"), c("c");
 
 // Defines a func to blur the columns of an input with a first order low
 // pass IIR filter, followed by a transpose.
@@ -39,7 +39,11 @@ Func blur_cols_transpose(Func input, Expr height, Expr alpha, bool skip_schedule
             // 8.2ms on an Intel i9-9960X using 16 threads
             // Split the transpose into tiles of rows. Parallelize over channels
             // and strips (Halide supports nested parallelism).
-            Var xo, yo, t;
+            Var xo("xo"), yo("yo"), t("t");
+			transpose.print_loop_nest();
+			blur.print_loop_nest();
+			printf("=====");
+
             transpose.compute_root()
                 .tile(x, y, xo, yo, x, y, vec, vec * 4)
                 .vectorize(x)
@@ -59,6 +63,9 @@ Func blur_cols_transpose(Func input, Expr height, Expr alpha, bool skip_schedule
             blur.update(2)
                 .reorder(x, ry)
                 .vectorize(x);
+
+			transpose.print_loop_nest();
+			blur.print_loop_nest();
         } else if (target.has_feature(Target::CUDA)) {
             // CUDA-specific GPU schedule (using gpu_lanes)
 

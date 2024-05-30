@@ -1,5 +1,7 @@
 #include <stdio.h>
 
+#include "halide_benchmark.h"
+
 #include "daubechies_x.h"
 #include "haar_x.h"
 #include "inverse_daubechies_x.h"
@@ -61,18 +63,23 @@ int main(int argc, char **argv) {
     Buffer<float, 3> transformed(input.width() / 2, input.height(), 2);
     Buffer<float, 2> inverse_transformed(input.width(), input.height());
 
+	double time_h = Halide::Tools::benchmark(10, 10, [&]{ haar_x(input, transformed); });
     _assert(haar_x(input, transformed) == 0, "haar_x failed");
-    save_transformed(transformed, dirname + "/haar_x.png");
+    save_transformed(transformed, dirname + "/haar_x.mat");
 
+	double time_hi = Halide::Tools::benchmark(10, 10, [&]{ inverse_haar_x(transformed, inverse_transformed); });
     _assert(inverse_haar_x(transformed, inverse_transformed) == 0, "inverse_haar_x failed");
-    save_untransformed(inverse_transformed, dirname + "/inverse_haar_x.png");
+    save_untransformed(inverse_transformed, dirname + "/inverse_haar_x.mat");
 
+	double time_d = Halide::Tools::benchmark(10, 10, [&]{ daubechies_x(input, transformed); });
     _assert(daubechies_x(input, transformed) == 0, "daubechies_x failed");
-    save_transformed(transformed, dirname + "/daubechies_x.png");
+    save_transformed(transformed, dirname + "/daubechies_x.mat");
 
+	double time_di = Halide::Tools::benchmark(10, 10, [&]{ inverse_daubechies_x(transformed, inverse_transformed); });
     _assert(inverse_daubechies_x(transformed, inverse_transformed) == 0, "inverse_daubechies_x failed");
-    save_untransformed(inverse_transformed, dirname + "/inverse_daubechies_x.png");
+    save_untransformed(inverse_transformed, dirname + "/inverse_daubechies_x.mat");
 
+	printf("Times are Haar: %f, Inverse Haar: %f, Daubechies: %f, Inv Daubechies: %f\n", time_h, time_hi, time_d, time_di);
     printf("Success!\n");
     return 0;
 }

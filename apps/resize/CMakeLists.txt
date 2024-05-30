@@ -62,15 +62,15 @@ target_link_libraries(resize
                       ${FILTERS})
 
 # Test that the app actually works!
-set(IMAGE ${CMAKE_CURRENT_LIST_DIR}/../images/rgb.png)
+set(IMAGE ${CMAKE_CURRENT_LIST_DIR}/../images/rgba.ppm)
 if (EXISTS ${IMAGE})
-    configure_file(${IMAGE} rgb.png COPYONLY)
+    configure_file(${IMAGE} rgba.ppm COPYONLY)
 
     add_test(NAME resize_initial_downsample
-             COMMAND resize rgb.png rgb_small.png -i lanczos -t float32 -f 0.125)
+             COMMAND resize rgba.ppm rgba.ppm -i lanczos -t float32 -f 0.125)
 
     set_tests_properties(resize_initial_downsample PROPERTIES
-                         FIXTURES_SETUP rgb_small
+                         FIXTURES_SETUP rgba.ppm
                          LABELS resize
                          SKIP_REGULAR_EXPRESSION "\\[SKIP\\]")
 
@@ -82,15 +82,15 @@ if (EXISTS ${IMAGE})
         list(GET VLIST 2 DIR)
         if ("${DIR}" STREQUAL "up")
             set(F 4.0)
-            set(INPUT rgb_small.png)
+            set(INPUT rgba.ppm)
         else ()
             set(F 0.5)
-            set(INPUT rgb.png)
+            set(INPUT rgba.ppm)
         endif ()
         add_test(NAME resize_${VARIANT}
-                 COMMAND resize ${INPUT} out_${VARIANT}.png -i ${INTERP} -t ${TYPE} -f ${F})
+                 COMMAND resize ${INPUT} out_${VARIANT}.ppm -i ${INTERP} -t ${TYPE} -f ${F})
         set_tests_properties(resize_${VARIANT}
-                             PROPERTIES FIXTURES_REQUIRED rgb_small
+                             PROPERTIES FIXTURES_REQUIRED rgba
                              LABELS resize
                              PASS_REGULAR_EXPRESSION "Success!"
                              SKIP_REGULAR_EXPRESSION "\\[SKIP\\]")

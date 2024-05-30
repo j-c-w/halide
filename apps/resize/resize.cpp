@@ -160,7 +160,8 @@ int main(int argc, char **argv) {
         auto out_packed =
             Halide::Runtime::Buffer<>::make_interleaved(out.type(), out.width(), out.height(), out.channels());
         time = Halide::Tools::benchmark(benchmark_iters, benchmark_iters, [&]() { resize_fn(in_packed, scale_factor, out_packed); });
-        printf("packed  %8s  %8s  %1.2f  time: %f ms\n",
+        // autos_t = Halide::Tools::benchmark(benchmark_iters, benchmark_iters, [&]() { resize_fn_auto_schedule(in_packed, scale_factor, out_packed); });
+        printf("packed  %8s  %8s  %1.2f  time: %f ms, ausotshcul: %f\n",
                interpolation_type.c_str(), input_type.c_str(), scale_factor, time * 1000);
     }
 
